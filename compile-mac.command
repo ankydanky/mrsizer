@@ -1,0 +1,6 @@
+#! /bin/bash
+
+rm -rf dist
+rm -rf build
+
+python setup.py py2app --optimize 1
