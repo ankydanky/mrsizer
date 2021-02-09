@@ -1,16 +1,16 @@
 # coding: utf-8
 
-from __future__ import unicode_literals
-
 import os
 import sys
 import subprocess
-import re
 
-import PySide.QtCore as core
-import PySide.QtGui as gui
+from PySide2 import QtWidgets, QtGui
 
-version = 1.3
+version = 2.0
+
+
+def getappdir():
+	return os.path.dirname(__file__)
 
 class MRSizer(object):
 	
@@ -23,19 +23,19 @@ class MRSizer(object):
 		self.createSysTray()
 	
 	def createWindow(self):
-		self.mainwindow = gui.QMainWindow()
+		self.mainwindow = QtWidgets.QMainWindow()
 		self.mainwindow.setFixedSize(0, 0)
 	
 	def createContextMenu(self):
-		self.cmenu = gui.QMenu()
+		self.cmenu = QtWidgets.QMenu()
 		
-		self.act_quit = gui.QAction("Quit MRSizer", self.cmenu)
+		self.act_quit = QtWidgets.QAction("Quit MRSizer", self.cmenu)
 		self.act_quit.triggered.connect(lambda: sys.exit(0))
 		
-		self.act_about = gui.QAction("About MRSizer", self.cmenu)
+		self.act_about = QtWidgets.QAction("About MRSizer", self.cmenu)
 		self.act_about.triggered.connect(self.showAbout)
 		
-		self.act_atboot = gui.QAction("Start at login", self.cmenu)
+		self.act_atboot = QtWidgets.QAction("Start at login", self.cmenu)
 		self.act_atboot.setCheckable(True)
 		self.act_atboot.triggered.connect(self.enableAtBoot)
 		
@@ -53,13 +53,13 @@ class MRSizer(object):
 		
 		for size in self.sizes:
 			width, height = size.split("x")
-			self.act_sizes[size] = gui.QAction(size, self.cmenu)
+			self.act_sizes[size] = QtWidgets.QAction(size, self.cmenu)
 			self.act_sizes[size].triggered.connect(lambda w=width, h=height: self.resize(w, h))
 			self.cmenu.addAction(self.act_sizes[size])
 		
 		self.cmenu.addSeparator()
 		
-		self.act_custom = gui.QAction("Custom size", self.cmenu)
+		self.act_custom = QtWidgets.QAction("Custom size", self.cmenu)
 		self.act_custom.triggered.connect(self.dlgCustom)
 		self.cmenu.addAction(self.act_custom)
 		
@@ -71,20 +71,20 @@ class MRSizer(object):
 	
 	def dlgCustom(self):
 		self.getActiveWindow()
-		dlg = gui.QDialog()
+		dlg = QtWidgets.QDialog()
 		dlg.setWindowTitle("Custom resize dimensions")
 		dlg.setWindowFlags(core.Qt.WindowStaysOnTopHint)
 		dlg.setFixedWidth(350)
 		dlg.setFixedHeight(120)
-		layout = gui.QVBoxLayout()
-		layout2 = gui.QHBoxLayout()
-		layout3 = gui.QHBoxLayout()
-		ipt_width = gui.QLineEdit()
-		ipt_height = gui.QLineEdit()
-		lbl = gui.QLabel(" X ")
-		lbl_width = gui.QLabel("Width: ")
-		lbl_height = gui.QLabel("Height: ")
-		btn_resize = gui.QPushButton("Apply")
+		layout = QtWidgets.QVBoxLayout()
+		layout2 = QtWidgets.QHBoxLayout()
+		layout3 = QtWidgets.QHBoxLayout()
+		ipt_width = QtWidgets.QLineEdit()
+		ipt_height = QtWidgets.QLineEdit()
+		lbl = QtWidgets.QLabel(" X ")
+		lbl_width = QtWidgets.QLabel("Width: ")
+		lbl_height = QtWidgets.QLabel("Height: ")
+		btn_resize = QtWidgets.QPushButton("Apply")
 		btn_resize.clicked.connect(lambda d=dlg,w=ipt_width,h=ipt_height: self.resizeCustom(d, w, h))
 		layout2.addWidget(lbl_width)
 		layout2.addWidget(ipt_width)
@@ -99,11 +99,15 @@ class MRSizer(object):
 		dlg.exec_()
 	
 	def createSysTray(self):
-		self.systray = gui.QSystemTrayIcon()
-		self.systray.setIcon(gui.QIcon("systray.png"))
+		img_path = "."
+		if hasattr(sys, "frozen"):
+			img_path = os.path.join(getappdir(), "..", "Resources")
+		self.systray = QtWidgets.QSystemTrayIcon()
+		self.systray.setIcon(QtGui.QIcon(os.path.join(img_path, "systray.png")))
 		self.systray.setContextMenu(self.cmenu)
 	
 	def asrun(self, ascript):
+		ascript = ascript.encode()
 		osa = subprocess.Popen(['osascript', '-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 		return osa.communicate(ascript)[0]
 
@@ -116,7 +120,7 @@ class MRSizer(object):
 			set the_application to (path to frontmost application as Unicode text)
 			do shell script "echo " & quoted form of the_application
 		''')
-		app = app.rstrip(":").split(":")
+		app = app.decode().rstrip(":").split(":")
 		app = os.path.join(os.sep, os.sep.join(app[1:])).rstrip()
 		self.activeWindow = app
 	
@@ -162,13 +166,13 @@ class MRSizer(object):
 			self.asrun('tell application "System Events" to make new login item at end with properties { path: "/Applications/MRSizer.app", name: "MRSizer", hidden: false }')
 	
 	def showAbout(self):
-		mbox = gui.QMessageBox()
+		mbox = QtWidgets.QMessageBox()
 		mbox.setText("MRSizer {0} was written by Andy Kayl.\nAll rights reserved.".format(version))
 		mbox.exec_()
 	
 	def verifyStartup(self):
 		items = self.asrun('tell application "System Events" to get the name of every login item')
-		if "MRSizer" in items.strip().split(", "):
+		if "MRSizer" in items.decode().strip().split(", "):
 			self.act_atboot.setChecked(True)
 	
 	def run(self):
