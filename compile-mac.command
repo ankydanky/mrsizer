@@ -3,4 +3,12 @@
 rm -rf dist
 rm -rf build
 
-python setup.py py2app --optimize 1
+python -m PyInstaller \
+--icon systray.icns \
+--windowed \
+--onedir \
+--add-data "systray.png:." \
+--name "MRSizer" \
+MRSizer.py
+
+rm -rf build
