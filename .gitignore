@@ -5,3 +5,4 @@ dist
 __*cache*__
 .DS_Store
 Thumbs.db*
+*.spec
